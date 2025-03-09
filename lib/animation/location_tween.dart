@@ -2,7 +2,6 @@
 import 'package:flutter/animation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animarker/core/i_interpolation_service_optimized.dart';
-
 // Project imports:
 import 'package:flutter_animarker/core/i_lat_lng.dart';
 import 'package:flutter_animarker/helpers/spherical_util.dart';

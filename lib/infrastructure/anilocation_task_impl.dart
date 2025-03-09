@@ -3,17 +3,17 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_animarker/animation/bearing_tween.dart';
-import 'package:flutter_animarker/core/anilocation_task_description.dart';
-import 'package:flutter_animarker/helpers/spherical_util.dart';
-import 'package:flutter_animarker/infrastructure/anilocation_task_initializer_mixin.dart';
-
+import 'package:flutter_animarker/animation/location_tween.dart';
 // Project imports:
 import 'package:flutter_animarker/animation/proxy_location_animation.dart';
+import 'package:flutter_animarker/core/anilocation_task_description.dart';
 import 'package:flutter_animarker/core/i_anilocation_task.dart';
-import 'package:flutter_animarker/animation/location_tween.dart';
-import 'package:flutter_animarker/helpers/extensions.dart';
 import 'package:flutter_animarker/core/i_lat_lng.dart';
+import 'package:flutter_animarker/helpers/extensions.dart';
+import 'package:flutter_animarker/helpers/spherical_util.dart';
+import 'package:flutter_animarker/infrastructure/anilocation_task_initializer_mixin.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+
 import 'interpolators/polynomial_location_interpolator_impl.dart';
 
 /// Hold the logic for interpolate each given marker per its MarkerId
@@ -124,7 +124,28 @@ class AnilocationTaskImpl extends IAnilocationTask
         wrapper.locationCtrller.resetAndForward(),
         _rippleCtrller.resetAndForward(),
       ]);
+      // await Future.wait(rotateClockwise(wrapper.locationTween.begin.bearing,
+      //         wrapper.locationTween.end.bearing)
+      //     ? [
+      //         wrapper.locationCtrller.resetAndForward(),
+      //         _rippleCtrller.resetAndForward(),
+      //       ]
+      //     : [
+      //         wrapper.locationCtrller.resetAndReverse(),
+      //         _rippleCtrller.resetAndReverse(),
+      //       ]);
     }
+  }
+
+  bool rotateClockwise(double angle1, double angle2) {
+    // Calculate absolute difference
+    final diff = (angle1 - angle2).abs();
+    // If absolute difference is greater than 180, find the complementary angle
+
+    if (diff > 180) {
+      return false;
+    }
+    return true;
   }
 
   /// Move the old [_locationTween].[end] to [_locationTween].[begin] position,
@@ -242,7 +263,31 @@ class AnilocationTaskImpl extends IAnilocationTask
 
   void _locationListener() {
     if (description.latLngListener != null) {
-      description.latLngListener!(value);
+      final needAdjustment = _useRotation;
+
+      if (needAdjustment) {
+        var startBearing = wrapper.locationTween.begin.bearing;
+        var endBearing = wrapper.locationTween.end.bearing;
+        var difference = endBearing - startBearing;
+        var normalizedDifference = ((difference + 180) % 360) - 180;
+        var shortestRotation = normalizedDifference;
+        var easedProgress =
+            Curves.easeInOut.transform(wrapper.locationCtrller.value);
+        var currentBearing =
+            (startBearing + shortestRotation * easedProgress + 360) % 360;
+        var smoothValue = value.copyWith(
+            bearing: currentBearing,
+            latitude: wrapper.locationTween
+                .evaluate(wrapper.locationCtrller)
+                .latitude,
+            longitude: wrapper.locationTween
+                .evaluate(wrapper.locationCtrller)
+                .longitude);
+
+        description.latLngListener!(smoothValue);
+      } else {
+        description.latLngListener!(value);
+      }
     }
   }
 
@@ -288,6 +333,11 @@ class AnilocationTaskImpl extends IAnilocationTask
       description.push(last);
       _forward();
     }
+  }
+
+  @override
+  void updateDuration(Duration duration) {
+    wrapper.locationCtrller.duration = duration;
   }
 
   @override

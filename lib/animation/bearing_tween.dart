@@ -1,7 +1,6 @@
 // Flutter imports:
 import 'package:flutter/animation.dart';
 import 'package:flutter_animarker/core/i_interpolation_service_optimized.dart';
-
 // Project imports:
 import 'package:flutter_animarker/infrastructure/interpolators/angle_interpolator_impl.dart';
 

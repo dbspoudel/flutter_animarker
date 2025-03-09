@@ -3,17 +3,15 @@ import 'dart:math';
 
 // Flutter imports:
 import 'package:flutter/material.dart';
-
-// Package imports:
-import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
-import 'package:vector_math/vector_math.dart';
-
 // Project imports:
 import 'package:flutter_animarker/core/i_lat_lng.dart';
 import 'package:flutter_animarker/core/ripple_marker.dart';
 import 'package:flutter_animarker/helpers/math_util.dart';
 import 'package:flutter_animarker/helpers/spherical_util.dart';
 import 'package:flutter_animarker/models/lat_lng_info.dart';
+// Package imports:
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
+import 'package:vector_math/vector_math.dart';
 
 extension DoubleEx on double {
   double get radians => MathUtil.toRadians(this).toDouble();
@@ -36,6 +34,9 @@ extension GoogleMapLatLng on ILatLng {
         ? BitmapDescriptor.fromJson(markerJson['icon'])
         : BitmapDescriptor.defaultMarker;
 
+    var clusterManagerId = markerJson['clusterManagerId'] != null
+        ? ClusterManagerId(markerJson['clusterManagerId'])
+        : null;
     var infoWindow = markerJson['infoWindow'] != null
         ? InfoWindow(
             anchor: Offset(markerJson['infoWindow']['anchor']![0],
@@ -50,6 +51,7 @@ extension GoogleMapLatLng on ILatLng {
         : const Offset(0.5, 1.0);
 
     return Marker(
+      clusterManagerId: clusterManagerId,
       markerId: markerId,
       position: toLatLng,
       rotation: bearing,
@@ -99,6 +101,11 @@ extension AnimationControllerEx on AnimationController {
     reset();
     return forward(from: from);
   }
+
+  TickerFuture resetAndReverse({double? from}) {
+    reset();
+    return reverse(from: from);
+  }
 }
 
 extension LatLngEx on Marker {
@@ -110,7 +117,8 @@ extension LatLngEx on Marker {
     }
   }
 
-  ILatLng get toLatLngInfo => LatLngInfo.marker(this, ripple: isRipple, bearing: rotation);
+  ILatLng get toLatLngInfo =>
+      LatLngInfo.marker(this, ripple: isRipple, bearing: rotation);
 }
 
 extension TweenEx<T> on Tween<T> {

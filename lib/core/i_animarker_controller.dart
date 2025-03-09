@@ -13,6 +13,8 @@ abstract class IAnimarkerController extends ILocationObservable {
 
   void updateRadius(double radius);
 
+  void updateDuration(Duration duration);
+
   void updateActiveTrip(bool activeTrip);
 
   void updateUseRotation(bool useRotation);

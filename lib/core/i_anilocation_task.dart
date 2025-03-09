@@ -1,7 +1,7 @@
 // Project imports:
 import 'package:flutter_animarker/infrastructure/anilocation_task_impl.dart';
-import 'anilocation_task_description.dart';
 
+import 'anilocation_task_description.dart';
 import 'i_lat_lng.dart';
 
 typedef LatLngListener = void Function(ILatLng iLatLng);
@@ -34,4 +34,6 @@ abstract class IAnilocationTask {
   void updateActiveTrip(bool isActiveTrip);
 
   void updateUseRotation(bool useRotation);
+
+  void updateDuration(Duration duration);
 }

@@ -1,18 +1,17 @@
 // Flutter imports:
 import 'package:diffutil_dart/diffutil.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animarker/animation/animarker_controller.dart';
 import 'package:flutter_animarker/core/animarker_controller_description.dart';
+import 'package:flutter_animarker/core/i_animarker_controller.dart';
+import 'package:flutter_animarker/helpers/google_map_helper.dart';
 import 'package:flutter_animarker/helpers/spherical_util.dart';
-
 // Package imports:
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 
+import '../flutter_map_marker_animation.dart';
 // Project imports:
 import '../helpers/extensions.dart';
-import '../flutter_map_marker_animation.dart';
-import 'package:flutter_animarker/helpers/google_map_helper.dart';
-import 'package:flutter_animarker/animation/animarker_controller.dart';
-import 'package:flutter_animarker/core/i_animarker_controller.dart';
 
 ///Google Maps widget wrapper for location, angle and ripple animation on map canvas
 /// The basic setup for using *Animarker* for Google Maps
@@ -187,7 +186,7 @@ class Animarker extends StatefulWidget {
   ///
   /// During multipoint interpolation the bearing/heading angle is taken from the first and last position.
   ///
-  /// Default value: 10
+  /// Default value: 2
   final int runExpressAfter;
 
   /// Save the [mapId] from Google Maps widget related to this Animarker widget.
@@ -301,8 +300,8 @@ class Animarker extends StatefulWidget {
     this.onStopover,
     this.zoom = 15.0,
     this.rippleRadius = 0.5,
-    this.runExpressAfter = 10,
-    this.angleThreshold = 1.5,
+    this.runExpressAfter = 2,
+    this.angleThreshold = 0,
     this.useRotation = true,
     this.rippleIdleAfter = const Duration(seconds: 30),
     this.isActiveTrip = true,
@@ -310,7 +309,7 @@ class Animarker extends StatefulWidget {
     this.markers = const <Marker>{},
     this.duration = const Duration(milliseconds: 1000),
     this.rippleDuration = const Duration(milliseconds: 2000),
-    this.shouldAnimateCamera = true,
+    this.shouldAnimateCamera = false,
   })  : assert(rippleRadius >= 0.0 && rippleRadius <= 1.0,
             'Must choose values between [0.0, 1.0] for radius scale'),
         assert(!markers.isAnyEmpty, 'Must choose a not empty MarkerId'),
@@ -360,15 +359,11 @@ class AnimarkerState extends State<Animarker> with TickerProviderStateMixin {
 
   @override
   void didUpdateWidget(Animarker oldWidget) {
-    print(
-      'didUpdateWidget: ${oldWidget.markers.map((e) => e.rotation).join(',')}',
-    );
     if (oldWidget.markers.length > widget.markers.length) {
-      print('didUpdateWidget: updateMarkers');
       widget.updateMarkers(oldWidget.markers, widget.markers);
       return;
     }
-    print('didUpdateWidget: calculateListDiff');
+
     final diffResult = calculateListDiff<Marker>(
       oldWidget.markers.toList(),
       widget.markers.toList(),
@@ -380,13 +375,15 @@ class AnimarkerState extends State<Animarker> with TickerProviderStateMixin {
     diffResult.getUpdatesWithData().forEach((element) {
       element.when(
           insert: (pos, marker) async {
-            print('didUpdateWidget: pushMarker');
             await _controller.pushMarker(marker);
           },
           remove: (pos, marker) => {},
           change: (pos, payload, payload2) {},
           move: (from, to, payload) => {});
     });
+    if (widget.isDurationHasChanged(oldWidget)) {
+      _controller.updateDuration(widget.duration);
+    }
 
     if (widget.isActiveTripHasChanged(oldWidget)) {
       _controller.updateActiveTrip(widget.isActiveTrip);
@@ -407,27 +404,33 @@ class AnimarkerState extends State<Animarker> with TickerProviderStateMixin {
 
   @override
   void didChangeDependencies() async {
-    print('Markers: didChangeDependencies ${widget.markers.length}');
     _devicePxRatio = MediaQuery.of(context).devicePixelRatio;
     _zoomScale =
         SphericalUtil.calculateZoomScale(_devicePxRatio, widget.zoom, midPoint);
 
     var mapId = await widget.mapId;
 
-    GoogleMapsFlutterPlatform.instance
-        .onMarkerTap(mapId: mapId)
-        .listen((MarkerTapEvent e) {
-      var value = keyByMarkerId(widget.markers)[e.value];
-      if (value != null && value.onTap != null) {
-        value.onTap?.call();
-      }
-    });
+    try {
+      GoogleMapsFlutterPlatform.instance
+          .onMarkerTap(
+        mapId: mapId,
+      )
+          .listen((MarkerTapEvent e) {
+        var value = keyByMarkerId(widget.markers)[e.value];
+        if (value != null && value.onTap != null) {
+          value.onTap?.call();
+        }
+      }, onError: (error) {
+        print(error);
+      });
+    } catch (e) {
+      print(e);
+    }
 
     super.didChangeDependencies();
   }
 
   void _locationListener(Marker marker, bool isStopover) async {
-    print('_locationListener');
     //Update the marker with animation
     _markers[marker.markerId] = marker;
     var temp = _previousMarkers;
@@ -492,6 +495,8 @@ extension AnimarkerEx on Animarker {
   bool radiusOrZoomHasChanged(Animarker oldWidget) =>
       (oldWidget.rippleRadius != rippleRadius || oldWidget.zoom != zoom) &&
       markers.isNotEmpty;
+  bool isDurationHasChanged(Animarker oldWidget) =>
+      oldWidget.duration != duration;
   bool isActiveTripHasChanged(Animarker oldWidget) =>
       oldWidget.isActiveTrip != isActiveTrip;
   bool useRotationHasChanged(Animarker oldWidget) =>

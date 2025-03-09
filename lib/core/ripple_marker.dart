@@ -19,6 +19,7 @@ class RippleMarker extends Marker {
     double rotation = 0.0,
     bool visible = true,
     double zIndex = 0.0,
+    ClusterManagerId? clusterManagerId,
     onTap,
     onDragEnd,
   }) : super(
@@ -33,6 +34,7 @@ class RippleMarker extends Marker {
           rotation: rotation,
           visible: visible,
           zIndex: zIndex,
+          clusterManagerId: clusterManagerId,
           onTap: onTap,
           onDragEnd: onDragEnd,
         );

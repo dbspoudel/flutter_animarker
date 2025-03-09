@@ -1,7 +1,6 @@
 // Flutter imports:
 import 'package:flutter_animarker/core/anilocation_task_description.dart';
 import 'package:flutter_animarker/core/animarker_controller_description.dart';
-
 // Package imports:
 
 // Project imports:
@@ -9,7 +8,6 @@ import 'package:flutter_animarker/core/i_anilocation_task.dart';
 import 'package:flutter_animarker/core/i_animarker_controller.dart';
 import 'package:flutter_animarker/core/i_lat_lng.dart';
 import 'package:flutter_animarker/helpers/extensions.dart';
-
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 
 class AnimarkerController extends IAnimarkerController {
@@ -32,6 +30,11 @@ class AnimarkerController extends IAnimarkerController {
   @override
   void updateRadius(double radius) {
     _radius = radius;
+  }
+
+  @override
+  void updateDuration(Duration duration) {
+    tracker.forEach((key, value) => value.updateDuration(duration));
   }
 
   @override
